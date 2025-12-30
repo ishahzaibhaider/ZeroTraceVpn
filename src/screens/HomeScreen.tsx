@@ -1,165 +1,147 @@
 /**
- * Home Screen (Main Dashboard)
- * Displays VPN connection status and controls
+ * Home Screen (Main Dashboard) - Disconnected State
+ * Responsive Figma design implementation
  */
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  ScrollView,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { theme } from '../theme';
-import { VpnServiceMock } from '../services/vpn';
-import { VpnConnectionStatus } from '../services/vpn';
+import ConnectButton from '../components/ConnectButton';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-const vpnService = new VpnServiceMock();
+const { width, height } = Dimensions.get('window');
+const DESIGN_WIDTH = 390;
+const DESIGN_HEIGHT = 844;
+
+// Responsive scaling function
+const scale = (size: number) => (width / DESIGN_WIDTH) * size;
+const scaleHeight = (size: number) => (height / DESIGN_HEIGHT) * size;
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const [connectionStatus, setConnectionStatus] = useState<VpnConnectionStatus>(
-    VpnConnectionStatus.DISCONNECTED
-  );
-  const [uploadSpeed, setUploadSpeed] = useState<string>('0.00');
-  const [downloadSpeed, setDownloadSpeed] = useState<string>('0.00');
-  const [connectionTime, setConnectionTime] = useState<string>('00 : 00 : 00');
 
-  useEffect(() => {
-    vpnService.initialize();
-    updateStatus();
-    
-    // Update stats periodically
-    const statsInterval = setInterval(() => {
-      updateStats();
-    }, 1000);
-
-    return () => {
-      clearInterval(statsInterval);
-      vpnService.cleanup();
-    };
-  }, []);
-
-  const updateStatus = async () => {
-    const status = await vpnService.getStatus();
-    setConnectionStatus(status);
+  const handleConnect = () => {
+    // TODO: Connect to VPN
+    console.log('Connect pressed');
   };
 
-  const updateStats = async () => {
-    const stats = await vpnService.getStats();
-    if (stats) {
-      setUploadSpeed(stats.uploadSpeed.toFixed(2));
-      setDownloadSpeed(stats.downloadSpeed.toFixed(2));
-      
-      const hours = Math.floor(stats.connectedDuration / 3600);
-      const minutes = Math.floor((stats.connectedDuration % 3600) / 60);
-      const seconds = stats.connectedDuration % 60;
-      setConnectionTime(
-        `${String(hours).padStart(2, '0')} : ${String(minutes).padStart(2, '0')} : ${String(seconds).padStart(2, '0')}`
-      );
-    }
+  const handleSmartConnect = () => {
+    navigation.navigate('ServerList');
   };
 
-  const handleConnect = async () => {
-    if (connectionStatus === VpnConnectionStatus.DISCONNECTED) {
-      const servers = await vpnService.getServers();
-      const smartConnect = servers.find(s => s.id === 'smart-connect');
-      if (smartConnect) {
-        await vpnService.connect(smartConnect);
-        updateStatus();
-      }
-    } else {
-      await vpnService.disconnect();
-      updateStatus();
-      setUploadSpeed('0.00');
-      setDownloadSpeed('0.00');
-      setConnectionTime('00 : 00 : 00');
-    }
+  const handleSettings = () => {
+    navigation.navigate('Settings');
   };
-
-  const getStatusText = () => {
-    switch (connectionStatus) {
-      case VpnConnectionStatus.CONNECTED:
-        return 'Connected';
-      case VpnConnectionStatus.CONNECTING:
-        return 'Connecting...';
-      case VpnConnectionStatus.DISCONNECTING:
-        return 'Disconnecting...';
-      default:
-        return 'Tap to Connect';
-    }
-  };
-
-  const isConnected = connectionStatus === VpnConnectionStatus.CONNECTED;
-  const isConnecting = connectionStatus === VpnConnectionStatus.CONNECTING;
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary.blue} />
       
-      {/* Top Section with Gradient Background */}
+      {/* Top Section - Blue Background */}
       <View style={styles.topSection}>
-        {/* Top Navigation */}
+        {/* Blue Background Rectangle */}
+        <View style={styles.blueBackground} />
+        
+        {/* Top Nav Bar */}
         <View style={styles.topNav}>
-          <Text style={styles.logo}>ZeroTrace</Text>
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('../../assets/ZeroTrace.png')} 
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
           <TouchableOpacity
             style={styles.settingsButton}
-            onPress={() => navigation.navigate('Settings')}
+            onPress={handleSettings}
+            activeOpacity={0.7}
           >
             <View style={styles.settingsIcon} />
           </TouchableOpacity>
         </View>
 
         {/* Smart Connect Card */}
-        <TouchableOpacity
-          style={styles.smartConnectCard}
-          onPress={() => navigation.navigate('ServerList')}
-        >
-          <View style={styles.smartConnectContent}>
-            <View style={styles.globeIcon} />
-            <Text style={styles.smartConnectText}>Smart Connect</Text>
-          </View>
-          <View style={styles.arrowIcon} />
-        </TouchableOpacity>
+        <View style={styles.smartConnectCardContainer}>
+          <TouchableOpacity
+            style={styles.smartConnectCard}
+            onPress={handleSmartConnect}
+            activeOpacity={0.8}
+          >
+            <View style={styles.smartConnectContent}>
+              <Image 
+                source={require('../../assets/globe.png')} 
+                style={styles.globeIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.smartConnectText}>Smart Connect</Text>
+            </View>
+            <View style={styles.arrowContainer}>
+              <View style={styles.arrowIcon} />
+            </View>
+          </TouchableOpacity>
+        </View>
 
-        {/* Stats Info */}
+        {/* Stats Info - Upload/Download */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <View style={styles.uploadIcon} />
+            <View style={styles.statIconContainer}>
+              <Image 
+                source={require('../../assets/upload.png')} 
+                style={styles.statIcon}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.statLabel}>Upload</Text>
-            <Text style={styles.statValue}>{uploadSpeed}</Text>
+            <Text style={styles.statValue}>0.00</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <View style={styles.downloadIcon} />
+            <View style={styles.statIconContainer}>
+              <View style={styles.downloadIconContainer}>
+                <Image 
+                  source={require('../../assets/download.png')} 
+                  style={styles.statIcon}
+                  resizeMode="contain"
+                />
+              </View>
+            </View>
             <Text style={styles.statLabel}>Download</Text>
-            <Text style={styles.statValue}>{downloadSpeed}</Text>
+            <Text style={styles.statValue}>0.00</Text>
           </View>
         </View>
 
         {/* Connection Button */}
-        <TouchableOpacity
-          style={[styles.connectButton, isConnected && styles.connectButtonActive]}
-          onPress={handleConnect}
-          disabled={isConnecting}
-        >
-          <View style={styles.connectButtonInner} />
-        </TouchableOpacity>
+        <View style={styles.connectButtonContainer}>
+          <ConnectButton onPress={handleConnect} />
+        </View>
       </View>
 
-      {/* Bottom Section */}
-      <View style={styles.bottomSection}>
-        <Text style={[styles.statusText, isConnected && styles.statusTextConnected]}>
-          {getStatusText()}
-        </Text>
-        <Text style={styles.connectionTime}>{connectionTime}</Text>
+      {/* Middle Section - Status Text and Time */}
+      <View style={styles.middleSection}>
+        <Text style={styles.statusText}>Tap to Connect</Text>
+        <View style={styles.timeContainer}>
+          <Text style={styles.connectionTime}>
+            <Text>00 : 00 : </Text>
+            <Text style={styles.connectionTimeSeconds}>00</Text>
+          </Text>
+        </View>
+      </View>
+
+      {/* Bottom Ad Placeholder */}
+      <View style={styles.adPlaceholder}>
+        <Text style={styles.adPlaceholderText}>Ad placeholder - Ads will be shown here</Text>
       </View>
     </View>
   );
@@ -169,43 +151,67 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.white,
+    width: '100%',
   },
   topSection: {
+    width: '100%',
+    aspectRatio: DESIGN_WIDTH / 506, // Maintain aspect ratio
     backgroundColor: theme.colors.primary.blue,
-    paddingTop: StatusBar.currentHeight || 0,
-    paddingBottom: theme.spacing['4xl'],
-    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  blueBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '77.5%', // 392/506
+    backgroundColor: theme.colors.primary.blue,
   },
   topNav: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
+    height: scale(48),
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(6),
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.background.overlay,
   },
-  logo: {
-    fontSize: theme.typography.sizes.md,
-    fontFamily: theme.typography.fonts.poppins.semiBold,
-    color: theme.colors.white,
+  logoContainer: {
+    height: scale(36),
+    justifyContent: 'center',
+  },
+  logoImage: {
+    width: scale(115),
+    height: scale(18),
   },
   settingsButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: scale(32),
+    height: scale(32),
+    borderRadius: scale(16),
     backgroundColor: theme.colors.background.overlay,
     borderWidth: 1,
     borderColor: theme.colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: scale(6),
   },
   settingsIcon: {
-    width: 20,
-    height: 20,
+    width: scale(20),
+    height: scale(20),
     backgroundColor: theme.colors.white,
-    borderRadius: 4,
+    borderRadius: scale(2),
+  },
+  smartConnectCardContainer: {
+    position: 'absolute',
+    left: scale(31),
+    top: scale(120),
+    width: scale(328),
   },
   smartConnectCard: {
     flexDirection: 'row',
@@ -214,112 +220,148 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background.overlay,
     borderWidth: 1,
     borderColor: theme.colors.white,
-    borderRadius: theme.borderRadius.lg,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.base,
-    marginTop: theme.spacing['3xl'],
-    marginHorizontal: theme.spacing.xl,
-    width: '85%',
+    borderRadius: scale(40),
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(10),
+    gap: scale(10),
   },
   smartConnectContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
+    gap: scale(8),
+    flex: 1,
   },
   globeIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: theme.colors.white,
-    borderRadius: 20,
+    width: scale(40),
+    height: scale(40),
   },
   smartConnectText: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: scale(16),
     fontFamily: theme.typography.fonts.poppins.semiBold,
     color: theme.colors.white,
+    fontWeight: '600',
+    letterSpacing: 0.15,
+  },
+  arrowContainer: {
+    width: scale(20),
+    height: scale(20),
+    backgroundColor: theme.colors.white,
+    borderRadius: scale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: scale(4),
   },
   arrowIcon: {
-    width: 20,
-    height: 20,
-    backgroundColor: theme.colors.white,
-    borderRadius: 10,
+    width: scale(8),
+    height: scale(12),
+    borderLeftWidth: scale(6),
+    borderLeftColor: theme.colors.dark,
+    borderTopWidth: scale(4),
+    borderTopColor: 'transparent',
+    borderBottomWidth: scale(4),
+    borderBottomColor: 'transparent',
   },
   statsContainer: {
+    position: 'absolute',
+    left: '50%',
+    top: scale(209),
+    transform: [{ translateX: scale(-164) }], // Half of 328px width
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: theme.spacing['3xl'],
-    gap: theme.spacing['5xl'],
+    width: scale(328),
+    gap: scale(48),
   },
   statItem: {
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: scale(6),
+    width: scale(83.273),
   },
-  uploadIcon: {
-    width: 25,
-    height: 26,
+  statIconContainer: {
+    width: scale(40),
+    height: scale(40),
+    borderRadius: scale(20),
     backgroundColor: theme.colors.white,
-    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scale(-7), // Adjust positioning
   },
-  downloadIcon: {
-    width: 25,
-    height: 26,
-    backgroundColor: theme.colors.white,
-    borderRadius: 4,
+  statIcon: {
+    width: scale(25.456),
+    height: scale(26.456),
+  },
+  downloadIconContainer: {
     transform: [{ rotate: '180deg' }],
   },
   statLabel: {
-    fontSize: theme.typography.sizes.xs,
+    fontSize: scale(10),
     fontFamily: theme.typography.fonts.poppins.medium,
     color: theme.colors.white,
+    fontWeight: '500',
+    lineHeight: scale(10) * 0.8744,
   },
   statValue: {
-    fontSize: theme.typography.sizes.md,
+    fontSize: scale(16),
     fontFamily: theme.typography.fonts.poppins.semiBold,
     color: theme.colors.white,
+    fontWeight: '600',
+    lineHeight: scale(16) * 0.8744,
   },
   statDivider: {
-    width: 1,
-    height: 34,
+    width: scale(1.097),
+    height: scale(34),
     backgroundColor: 'rgba(234, 234, 234, 0.3)',
   },
-  connectButton: {
-    width: 226,
-    height: 208,
-    marginTop: theme.spacing['3xl'],
+  connectButtonContainer: {
+    position: 'absolute',
+    left: scale(74),
+    top: scale(297),
+    width: scale(226),
+    height: scale(208),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  connectButtonActive: {
-    // Add active state styling
-  },
-  connectButtonInner: {
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: theme.colors.white,
-    borderWidth: 4,
-    borderColor: theme.colors.primary.blue,
-  },
-  bottomSection: {
-    flex: 1,
+  middleSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: theme.spacing['4xl'],
+    paddingVertical: scale(20),
+    gap: scale(8),
+    minHeight: scale(163),
   },
   statusText: {
-    fontSize: theme.typography.sizes.lg,
+    fontSize: scale(18),
     fontFamily: theme.typography.fonts.poppins.bold,
     color: theme.colors.primary.blue,
+    fontWeight: '700',
     textDecorationLine: 'underline',
-    marginBottom: theme.spacing.md,
+    textDecorationStyle: 'solid',
+    letterSpacing: 0.25,
+    textAlign: 'center',
+    width: '100%',
   },
-  statusTextConnected: {
-    color: theme.colors.primary.blue,
+  timeContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   connectionTime: {
-    fontSize: theme.typography.sizes['2xl'],
+    fontSize: scale(32),
     fontFamily: theme.typography.fonts.poppins.bold,
     color: theme.colors.dark,
+    fontWeight: '700',
+    lineHeight: scale(32) * theme.typography.lineHeights.tight,
+  },
+  connectionTimeSeconds: {
+    color: theme.colors.grey.base,
+  },
+  adPlaceholder: {
+    width: '100%',
+    paddingVertical: scale(10),
+    alignItems: 'center',
+    backgroundColor: theme.colors.white,
+  },
+  adPlaceholderText: {
+    fontSize: scale(14),
+    color: theme.colors.grey.base,
+    fontStyle: 'italic',
   },
 });
-
