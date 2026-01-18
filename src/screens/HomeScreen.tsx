@@ -12,12 +12,16 @@ import {
   StatusBar,
   Dimensions,
   Image,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { theme } from '../theme';
 import ConnectButton from '../components/ConnectButton';
+import { SettingsIcon } from '../components/icons/SettingsIcon';
+import Svg, { Path } from 'react-native-svg';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -49,30 +53,41 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.primary.blue} />
       
-      {/* Top Section - Blue Background */}
-      <View style={styles.topSection}>
-        {/* Blue Background Rectangle */}
-        <View style={styles.blueBackground} />
-        
-        {/* Top Nav Bar */}
-        <View style={styles.topNav}>
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../assets/ZeroTrace.png')} 
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
-          </View>
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={handleSettings}
-            activeOpacity={0.7}
+      {/* Blue Section - Total 390 x 506 */}
+      <View style={styles.blueSection}>
+        {/* Blue Background Shape - Exact Figma SVG */}
+        <View style={styles.blueBackgroundShape}>
+          <Svg
+            width={width}
+            height={scale(392)}
+            viewBox="0 0 390 392"
+            style={styles.blueShapeSvg}
+            preserveAspectRatio="none"
           >
-            <View style={styles.settingsIcon} />
-          </TouchableOpacity>
+            <Path
+              d="M0 0H390V362.174L298.849 392H90.6977L0 362.174V0Z"
+              fill={theme.colors.primary.blue}
+            />
+          </Svg>
         </View>
+        
+        {/* Header with Safe Area - 390 x 96 */}
+        <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
+          <View style={styles.topNav}>
+            <Text style={styles.logoText}>ZeroTrace</Text>
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={handleSettings}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingsIconContainer}>
+                <SettingsIcon />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
 
-        {/* Smart Connect Card */}
+        {/* Smart Connect Card - 328 x 60, gap 26.5 from header */}
         <View style={styles.smartConnectCardContainer}>
           <TouchableOpacity
             style={styles.smartConnectCard}
@@ -82,7 +97,7 @@ export default function HomeScreen() {
             <View style={styles.smartConnectContent}>
               <Image 
                 source={require('../../assets/globe.png')} 
-                style={styles.globeIcon}
+                style={[styles.globeIcon, { tintColor: theme.colors.accent.orange }]}
                 resizeMode="contain"
               />
               <Text style={styles.smartConnectText}>Smart Connect</Text>
@@ -93,13 +108,13 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Stats Info - Upload/Download */}
+        {/* Stats Info - Upload/Download - 328 x 72.5, gap 26.5 from globe */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <View style={styles.statIconContainer}>
               <Image 
                 source={require('../../assets/upload.png')} 
-                style={styles.statIcon}
+                style={[styles.statIcon, { tintColor: theme.colors.accent.orange }]}
                 resizeMode="contain"
               />
             </View>
@@ -112,7 +127,7 @@ export default function HomeScreen() {
               <View style={styles.downloadIconContainer}>
                 <Image 
                   source={require('../../assets/download.png')} 
-                  style={styles.statIcon}
+                  style={[styles.statIcon, { tintColor: theme.colors.accent.orange }]}
                   resizeMode="contain"
                 />
               </View>
@@ -122,7 +137,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Connection Button */}
+        {/* Connection Button - 226 x 208, gap 15 from upload/download */}
         <View style={styles.connectButtonContainer}>
           <ConnectButton onPress={handleConnect} />
         </View>
@@ -139,9 +154,20 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Bottom Ad Placeholder */}
-      <View style={styles.adPlaceholder}>
-        <Text style={styles.adPlaceholderText}>Ad placeholder - Ads will be shown here</Text>
+      {/* Bottom Ad Banner */}
+      <View style={styles.adBanner}>
+        <Image 
+          source={require('../../assets/icon.png')} 
+          style={styles.adImage}
+          resizeMode="cover"
+        />
+        <View style={styles.adContent}>
+          <View style={styles.adTextPlaceholder1} />
+          <View style={styles.adTextPlaceholder2} />
+          <TouchableOpacity style={styles.installButton} activeOpacity={0.7}>
+            <Text style={styles.installButtonText}>Install</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -153,76 +179,93 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.white,
     width: '100%',
   },
-  topSection: {
+  blueSection: {
     width: '100%',
-    aspectRatio: DESIGN_WIDTH / 506, // Maintain aspect ratio
-    backgroundColor: theme.colors.primary.blue,
+    height: scale(506), // Total blue section height
     position: 'relative',
     overflow: 'hidden',
   },
-  blueBackground: {
+  blueBackgroundShape: {
     position: 'absolute',
     top: 0,
     left: 0,
     width: '100%',
-    height: '77.5%', // 392/506
-    backgroundColor: theme.colors.primary.blue,
+    height: scale(392),
+    zIndex: 0,
   },
-  topNav: {
+  blueShapeSvg: {
     position: 'absolute',
     top: 0,
     left: 0,
+    width: '100%',
+    height: '100%',
+  },
+  headerSafeArea: {
+    backgroundColor: 'transparent',
+    height: scale(96), // Header including safe area
+    justifyContent: 'flex-end',
+    position: 'relative',
+    zIndex: 10,
+  },
+  topNav: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    height: scale(48),
     paddingHorizontal: scale(16),
-    paddingVertical: scale(6),
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.background.overlay,
+    paddingBottom: scale(12),
+    backgroundColor: 'transparent',
   },
-  logoContainer: {
-    height: scale(36),
-    justifyContent: 'center',
-  },
-  logoImage: {
-    width: scale(115),
-    height: scale(18),
+  logoText: {
+    fontSize: scale(18),
+    fontFamily: theme.typography.fonts.poppins.bold,
+    color: theme.colors.white,
+    fontWeight: '700',
+    letterSpacing: 0,
+    lineHeight: scale(18) * 1.2,
   },
   settingsButton: {
     width: scale(32),
     height: scale(32),
     borderRadius: scale(16),
-    backgroundColor: theme.colors.background.overlay,
-    borderWidth: 1,
-    borderColor: theme.colors.white,
+    backgroundColor: theme.colors.primary.blue,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: scale(6),
+    // White glow effect - multiple layers for better glow
+    shadowColor: theme.colors.white,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: scale(4),
+    elevation: 4,
+    // Subtle white border for additional glow
+    borderWidth: scale(0.5),
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
-  settingsIcon: {
+  settingsIconContainer: {
     width: scale(20),
     height: scale(20),
-    backgroundColor: theme.colors.white,
-    borderRadius: scale(2),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   smartConnectCardContainer: {
     position: 'absolute',
-    left: scale(31),
-    top: scale(120),
+    left: (width - scale(328)) / 2, // Center horizontally: (390 - 328) / 2 = 31
+    top: scale(96) + scale(26.5), // Header (96) + gap (26.5)
     width: scale(328),
+    height: scale(60),
+    zIndex: 10,
   },
   smartConnectCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.background.overlay,
+    backgroundColor: theme.colors.white,
     borderWidth: 1,
-    borderColor: theme.colors.white,
+    borderColor: theme.colors.primary.blue,
     borderRadius: scale(40),
     paddingHorizontal: scale(16),
     paddingVertical: scale(10),
+    height: scale(60),
     gap: scale(10),
   },
   smartConnectContent: {
@@ -238,14 +281,14 @@ const styles = StyleSheet.create({
   smartConnectText: {
     fontSize: scale(16),
     fontFamily: theme.typography.fonts.poppins.semiBold,
-    color: theme.colors.white,
+    color: theme.colors.dark,
     fontWeight: '600',
     letterSpacing: 0.15,
   },
   arrowContainer: {
     width: scale(20),
     height: scale(20),
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.dark,
     borderRadius: scale(10),
     alignItems: 'center',
     justifyContent: 'center',
@@ -255,7 +298,7 @@ const styles = StyleSheet.create({
     width: scale(8),
     height: scale(12),
     borderLeftWidth: scale(6),
-    borderLeftColor: theme.colors.dark,
+    borderLeftColor: theme.colors.white,
     borderTopWidth: scale(4),
     borderTopColor: 'transparent',
     borderBottomWidth: scale(4),
@@ -263,14 +306,15 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     position: 'absolute',
-    left: '50%',
-    top: scale(209),
-    transform: [{ translateX: scale(-164) }], // Half of 328px width
+    left: (width - scale(328)) / 2, // Center horizontally
+    top: scale(96) + scale(26.5) + scale(60) + scale(26.5), // Header + gap + globe + gap
+    width: scale(328),
+    height: scale(72.5),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: scale(328),
     gap: scale(48),
+    zIndex: 10,
   },
   statItem: {
     alignItems: 'center',
@@ -282,6 +326,8 @@ const styles = StyleSheet.create({
     height: scale(40),
     borderRadius: scale(20),
     backgroundColor: theme.colors.white,
+    borderWidth: scale(1.5),
+    borderColor: theme.colors.accent.orange,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: scale(-7), // Adjust positioning
@@ -314,12 +360,13 @@ const styles = StyleSheet.create({
   },
   connectButtonContainer: {
     position: 'absolute',
-    left: scale(74),
-    top: scale(297),
+    left: (width - scale(226)) / 2, // Center horizontally: (390 - 226) / 2 = 82
+    top: scale(96) + scale(26.5) + scale(60) + scale(26.5) + scale(72.5) + scale(15), // Header + gap + globe + gap + upload/download + gap
     width: scale(226),
     height: scale(208),
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   middleSection: {
     alignItems: 'center',
@@ -353,15 +400,51 @@ const styles = StyleSheet.create({
   connectionTimeSeconds: {
     color: theme.colors.grey.base,
   },
-  adPlaceholder: {
+  adBanner: {
     width: '100%',
-    paddingVertical: scale(10),
-    alignItems: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(12),
     backgroundColor: theme.colors.white,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.grey.light30,
+    alignItems: 'center',
+    gap: scale(12),
   },
-  adPlaceholderText: {
+  adImage: {
+    width: scale(60),
+    height: scale(60),
+    borderRadius: scale(8),
+    backgroundColor: theme.colors.grey.light15,
+  },
+  adContent: {
+    flex: 1,
+    gap: scale(6),
+  },
+  adTextPlaceholder1: {
+    height: scale(12),
+    width: '70%',
+    backgroundColor: theme.colors.grey.light30,
+    borderRadius: scale(2),
+  },
+  adTextPlaceholder2: {
+    height: scale(12),
+    width: '50%',
+    backgroundColor: theme.colors.grey.light30,
+    borderRadius: scale(2),
+  },
+  installButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: theme.colors.primary.blue,
+    paddingHorizontal: scale(16),
+    paddingVertical: scale(8),
+    borderRadius: scale(6),
+    marginTop: scale(4),
+  },
+  installButtonText: {
     fontSize: scale(14),
-    color: theme.colors.grey.base,
-    fontStyle: 'italic',
+    fontFamily: theme.typography.fonts.poppins.semiBold,
+    color: theme.colors.white,
+    fontWeight: '600',
   },
 });

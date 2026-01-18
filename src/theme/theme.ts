@@ -37,6 +37,11 @@ export const theme = {
       disconnected: '#939393',
       connecting: '#0c64e0',
     },
+    
+    // Accent Colors
+    accent: {
+      orange: '#FF6B35', // Orange for icons (adjust based on exact Figma color)
+    },
   },
   
   typography: {

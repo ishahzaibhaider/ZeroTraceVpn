@@ -1,98 +1,87 @@
 /**
  * Settings Icon (Gear)
+ * SVG-based gear icon for crisp rendering
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import Svg, { Path, Circle } from 'react-native-svg';
 
-export const SettingsIcon = () => (
-  <View style={styles.container}>
-    <View style={styles.gear}>
-      <View style={styles.tooth1} />
-      <View style={styles.tooth2} />
-      <View style={styles.tooth3} />
-      <View style={styles.tooth4} />
-      <View style={styles.tooth5} />
-      <View style={styles.tooth6} />
-      <View style={styles.center} />
+const { width } = Dimensions.get('window');
+const DESIGN_WIDTH = 390;
+const scale = (size: number) => (width / DESIGN_WIDTH) * size;
+
+export const SettingsIcon = () => {
+  const iconSize = scale(20);
+  const centerX = iconSize / 2;
+  const centerY = iconSize / 2;
+  const outerRadius = iconSize / 2 - scale(1);
+  const innerRadius = scale(5);
+  const centerRadius = scale(2.5);
+  
+  // Create gear path with 8 teeth
+  const teeth = 8;
+  const angleStep = (2 * Math.PI) / teeth;
+  const points: string[] = [];
+  
+  for (let i = 0; i < teeth; i++) {
+    const angle1 = i * angleStep;
+    const angle2 = (i + 0.5) * angleStep;
+    const angle3 = (i + 1) * angleStep;
+    
+    // Outer point (tooth tip)
+    const outerX1 = centerX + outerRadius * Math.cos(angle1);
+    const outerY1 = centerY + outerRadius * Math.sin(angle1);
+    
+    // Middle point (tooth base outer)
+    const midX = centerX + innerRadius * Math.cos(angle2);
+    const midY = centerY + innerRadius * Math.sin(angle2);
+    
+    // Outer point (next tooth tip)
+    const outerX2 = centerX + outerRadius * Math.cos(angle3);
+    const outerY2 = centerY + outerRadius * Math.sin(angle3);
+    
+    // Inner point (tooth base inner)
+    const innerX = centerX + innerRadius * Math.cos(angle2);
+    const innerY = centerY + innerRadius * Math.sin(angle2);
+    
+    if (i === 0) {
+      points.push(`M ${outerX1} ${outerY1}`);
+    }
+    points.push(`L ${midX} ${midY}`);
+    points.push(`L ${outerX2} ${outerY2}`);
+  }
+  
+  // Close the path
+  points.push('Z');
+  
+  const gearPath = points.join(' ');
+  
+  return (
+    <View style={[styles.container, { width: iconSize, height: iconSize }]}>
+      <Svg width={iconSize} height={iconSize} viewBox={`0 0 ${iconSize} ${iconSize}`}>
+        {/* Gear outer shape */}
+        <Path
+          d={gearPath}
+          fill="#FFFFFF"
+          stroke="none"
+        />
+        {/* Center circle */}
+        <Circle
+          cx={centerX}
+          cy={centerY}
+          r={centerRadius}
+          fill="#FFFFFF"
+        />
+      </Svg>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
-    width: 20,
-    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  gear: {
-    width: 20,
-    height: 20,
-    position: 'relative',
-  },
-  tooth1: {
-    position: 'absolute',
-    top: 0,
-    left: 8,
-    width: 4,
-    height: 3,
-    backgroundColor: '#ffffff',
-    borderRadius: 1,
-  },
-  tooth2: {
-    position: 'absolute',
-    top: 3,
-    right: 0,
-    width: 3,
-    height: 4,
-    backgroundColor: '#ffffff',
-    borderRadius: 1,
-  },
-  tooth3: {
-    position: 'absolute',
-    bottom: 3,
-    right: 0,
-    width: 3,
-    height: 4,
-    backgroundColor: '#ffffff',
-    borderRadius: 1,
-  },
-  tooth4: {
-    position: 'absolute',
-    bottom: 0,
-    left: 8,
-    width: 4,
-    height: 3,
-    backgroundColor: '#ffffff',
-    borderRadius: 1,
-  },
-  tooth5: {
-    position: 'absolute',
-    bottom: 3,
-    left: 0,
-    width: 3,
-    height: 4,
-    backgroundColor: '#ffffff',
-    borderRadius: 1,
-  },
-  tooth6: {
-    position: 'absolute',
-    top: 3,
-    left: 0,
-    width: 3,
-    height: 4,
-    backgroundColor: '#ffffff',
-    borderRadius: 1,
-  },
-  center: {
-    position: 'absolute',
-    top: 7,
-    left: 7,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#ffffff',
   },
 });
 
