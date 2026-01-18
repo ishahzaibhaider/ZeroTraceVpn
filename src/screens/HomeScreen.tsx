@@ -3,7 +3,7 @@
  * Responsive Figma design implementation
  */
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -33,13 +33,62 @@ const DESIGN_HEIGHT = 844;
 const scale = (size: number) => (width / DESIGN_WIDTH) * size;
 const scaleHeight = (size: number) => (height / DESIGN_HEIGHT) * size;
 
+type ConnectionStatus = 'disconnected' | 'connecting' | 'connected';
+
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
+  const [progress, setProgress] = useState(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleConnect = () => {
-    // TODO: Connect to VPN
-    console.log('Connect pressed');
+    if (connectionStatus === 'disconnected') {
+      // Start connecting
+      setConnectionStatus('connecting');
+      setProgress(0);
+      
+      // Animate progress from 0 to 100 over 1.5 seconds (faster and smoother)
+      const duration = 1500; // 1.5 seconds - faster
+      const steps = 90; // 90 steps for smoother animation (60fps)
+      const increment = 100 / steps;
+      const intervalDuration = duration / steps;
+      
+      let currentProgress = 0;
+      progressIntervalRef.current = setInterval(() => {
+        currentProgress += increment;
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          setProgress(100);
+          // Transition to connected state immediately (no delay)
+          setConnectionStatus('connected');
+          setProgress(100);
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+        } else {
+          setProgress(currentProgress);
+        }
+      }, intervalDuration);
+    } else if (connectionStatus === 'connected') {
+      // Disconnect immediately
+      setConnectionStatus('disconnected');
+      setProgress(0);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    }
   };
+
+  useEffect(() => {
+    // Cleanup on unmount
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleSmartConnect = () => {
     navigation.navigate('ServerList');
@@ -139,13 +188,21 @@ export default function HomeScreen() {
 
         {/* Connection Button - 226 x 208, gap 15 from upload/download */}
         <View style={styles.connectButtonContainer}>
-          <ConnectButton onPress={handleConnect} />
+          <ConnectButton 
+            onPress={handleConnect} 
+            connectionStatus={connectionStatus}
+            progress={progress}
+          />
         </View>
       </View>
 
       {/* Middle Section - Status Text and Time */}
       <View style={styles.middleSection}>
-        <Text style={styles.statusText}>Tap to Connect</Text>
+        <Text style={styles.statusText}>
+          {connectionStatus === 'disconnected' ? 'Tap to Connect' : 
+           connectionStatus === 'connecting' ? 'Connecting...' : 
+           'Tap to Disconnect'}
+        </Text>
         <View style={styles.timeContainer}>
           <Text style={styles.connectionTime}>
             <Text>00 : 00 : </Text>
