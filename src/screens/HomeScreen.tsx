@@ -20,8 +20,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { theme } from '../theme';
 import ConnectButton from '../components/ConnectButton';
-import { SettingsIcon } from '../components/icons/SettingsIcon';
+import { SettingsIcon, GlobeIcon, ArrowRightIcon, UploadIcon, DownloadIcon } from '../components/icons';
 import Svg, { Path } from 'react-native-svg';
+import { VpnServiceMock } from '../services/vpn';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -40,12 +41,43 @@ export default function HomeScreen() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [progress, setProgress] = useState(0);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Real-time stats
+  const [connectionTime, setConnectionTime] = useState(0); // in seconds
+  const [uploadSpeed, setUploadSpeed] = useState(0); // in Mbps
+  const [downloadSpeed, setDownloadSpeed] = useState(0); // in Mbps
+  
+  // Refs for intervals
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const statsIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const connectionStartTimeRef = useRef<number | null>(null);
+  
+  // VPN service instance
+  const vpnServiceRef = useRef(new VpnServiceMock());
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (connectionStatus === 'disconnected') {
       // Start connecting
       setConnectionStatus('connecting');
       setProgress(0);
+      
+      // Get a default server for connection (use Smart Connect or first available)
+      try {
+        const servers = await vpnServiceRef.current.getServers();
+        const defaultServer = servers.find(s => s.id === 'smart-connect') || servers[0];
+        
+        if (defaultServer) {
+          // Connect to VPN service in background
+          vpnServiceRef.current.connect(defaultServer).catch((error) => {
+            console.error('VPN connection error:', error);
+            // If connection fails, reset UI
+            setConnectionStatus('disconnected');
+            setProgress(0);
+          });
+        }
+      } catch (error) {
+        console.error('Error getting servers:', error);
+      }
       
       // Animate progress from 0 to 100 over 1.5 seconds (faster and smoother)
       const duration = 1500; // 1.5 seconds - faster
@@ -66,27 +98,117 @@ export default function HomeScreen() {
             clearInterval(progressIntervalRef.current);
             progressIntervalRef.current = null;
           }
+          
+          // Start timer and stats polling when connected
+          startConnectionTimer();
+          startStatsPolling();
         } else {
           setProgress(currentProgress);
         }
       }, intervalDuration);
     } else if (connectionStatus === 'connected') {
+      // Disconnect from VPN service
+      try {
+        await vpnServiceRef.current.disconnect();
+      } catch (error) {
+        console.error('VPN disconnection error:', error);
+      }
+      
       // Disconnect immediately
       setConnectionStatus('disconnected');
       setProgress(0);
+      stopConnectionTimer();
+      stopStatsPolling();
+      setConnectionTime(0);
+      setUploadSpeed(0);
+      setDownloadSpeed(0);
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
     }
   };
+  
+  const startConnectionTimer = () => {
+    connectionStartTimeRef.current = Date.now();
+    setConnectionTime(0);
+    
+    timerIntervalRef.current = setInterval(() => {
+      if (connectionStartTimeRef.current) {
+        const elapsed = Math.floor((Date.now() - connectionStartTimeRef.current) / 1000);
+        setConnectionTime(elapsed);
+      }
+    }, 1000); // Update every second
+  };
+  
+  const stopConnectionTimer = () => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    connectionStartTimeRef.current = null;
+  };
+  
+  const startStatsPolling = async () => {
+    // Poll stats every second
+    const pollStats = async () => {
+      try {
+        const stats = await vpnServiceRef.current.getStats();
+        if (stats) {
+          setUploadSpeed(stats.uploadSpeed);
+          setDownloadSpeed(stats.downloadSpeed);
+          // Update timer from stats if available (more accurate)
+          if (stats.connectedDuration > 0) {
+            setConnectionTime(stats.connectedDuration);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching VPN stats:', error);
+      }
+    };
+    
+    // Poll immediately, then every second
+    pollStats();
+    statsIntervalRef.current = setInterval(pollStats, 1000);
+  };
+  
+  const stopStatsPolling = () => {
+    if (statsIntervalRef.current) {
+      clearInterval(statsIntervalRef.current);
+      statsIntervalRef.current = null;
+    }
+  };
+  
+  // Format time components for display
+  const formatTimeComponents = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    return {
+      hours: String(hours).padStart(2, '0'),
+      minutes: String(minutes).padStart(2, '0'),
+      seconds: String(secs).padStart(2, '0'),
+    };
+  };
+  
+  // Format speed with 2 decimal places
+  const formatSpeed = (speed: number): string => {
+    return speed.toFixed(2);
+  };
 
   useEffect(() => {
+    // Initialize VPN service
+    vpnServiceRef.current.initialize();
+    
     // Cleanup on unmount
     return () => {
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
       }
+      stopConnectionTimer();
+      stopStatsPolling();
+      vpnServiceRef.current.cleanup();
     };
   }, []);
 
@@ -129,9 +251,7 @@ export default function HomeScreen() {
               onPress={handleSettings}
               activeOpacity={0.7}
             >
-              <View style={styles.settingsIconContainer}>
-                <SettingsIcon />
-              </View>
+              <SettingsIcon size={scale(33)} />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -144,15 +264,11 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.smartConnectContent}>
-              <Image 
-                source={require('../../assets/globe.png')} 
-                style={[styles.globeIcon, { tintColor: theme.colors.accent.orange }]}
-                resizeMode="contain"
-              />
+              <GlobeIcon size={scale(40)} />
               <Text style={styles.smartConnectText}>Smart Connect</Text>
             </View>
             <View style={styles.arrowContainer}>
-              <View style={styles.arrowIcon} />
+              <ArrowRightIcon size={scale(20)} />
             </View>
           </TouchableOpacity>
         </View>
@@ -161,28 +277,18 @@ export default function HomeScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <View style={styles.statIconContainer}>
-              <Image 
-                source={require('../../assets/upload.png')} 
-                style={[styles.statIcon, { tintColor: theme.colors.accent.orange }]}
-                resizeMode="contain"
-              />
+              <UploadIcon size={scale(26)} />
             </View>
-            <Text style={styles.statLabel}>Upload</Text>
-            <Text style={styles.statValue}>0.00</Text>
+            <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit={true}>Upload</Text>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit={true}>{formatSpeed(uploadSpeed)}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <View style={styles.statIconContainer}>
-              <View style={styles.downloadIconContainer}>
-                <Image 
-                  source={require('../../assets/download.png')} 
-                  style={[styles.statIcon, { tintColor: theme.colors.accent.orange }]}
-                  resizeMode="contain"
-                />
-              </View>
+              <DownloadIcon size={scale(26)} />
             </View>
-            <Text style={styles.statLabel}>Download</Text>
-            <Text style={styles.statValue}>0.00</Text>
+            <Text style={styles.statLabel} numberOfLines={1} adjustsFontSizeToFit={true}>Download</Text>
+            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit={true}>{formatSpeed(downloadSpeed)}</Text>
           </View>
         </View>
 
@@ -205,8 +311,20 @@ export default function HomeScreen() {
         </Text>
         <View style={styles.timeContainer}>
           <Text style={styles.connectionTime}>
-            <Text>00 : 00 : </Text>
-            <Text style={styles.connectionTimeSeconds}>00</Text>
+            {connectionStatus === 'connected' ? (() => {
+              const time = formatTimeComponents(connectionTime);
+              return (
+                <>
+                  <Text>{time.hours} : {time.minutes} : </Text>
+                  <Text style={styles.connectionTimeSeconds}>{time.seconds}</Text>
+                </>
+              );
+            })() : (
+              <>
+                <Text>00 : 00 : </Text>
+                <Text style={styles.connectionTimeSeconds}>00</Text>
+              </>
+            )}
           </Text>
         </View>
       </View>
@@ -282,27 +400,14 @@ const styles = StyleSheet.create({
     lineHeight: scale(18) * 1.2,
   },
   settingsButton: {
-    width: scale(32),
-    height: scale(32),
-    borderRadius: scale(16),
-    backgroundColor: theme.colors.primary.blue,
+    width: scale(33),
+    height: scale(33),
+    borderRadius: scale(16.5),
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    // White glow effect - multiple layers for better glow
-    shadowColor: theme.colors.white,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: scale(4),
-    elevation: 4,
-    // Subtle white border for additional glow
-    borderWidth: scale(0.5),
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-  },
-  settingsIconContainer: {
-    width: scale(20),
-    height: scale(20),
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   smartConnectCardContainer: {
     position: 'absolute',
@@ -316,9 +421,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.white,
+    backgroundColor: 'rgba(20, 20, 25, 0.12)', // Figma: translucent dark
     borderWidth: 1,
-    borderColor: theme.colors.primary.blue,
+    borderColor: theme.colors.white,
     borderRadius: scale(40),
     paddingHorizontal: scale(16),
     paddingVertical: scale(10),
@@ -338,77 +443,68 @@ const styles = StyleSheet.create({
   smartConnectText: {
     fontSize: scale(16),
     fontFamily: theme.typography.fonts.poppins.semiBold,
-    color: theme.colors.dark,
+    color: theme.colors.white, // White text as per Figma (works with semi-transparent card)
     fontWeight: '600',
     letterSpacing: 0.15,
   },
   arrowContainer: {
     width: scale(20),
     height: scale(20),
-    backgroundColor: theme.colors.dark,
+    backgroundColor: theme.colors.white,
     borderRadius: scale(10),
     alignItems: 'center',
     justifyContent: 'center',
-    padding: scale(4),
-  },
-  arrowIcon: {
-    width: scale(8),
-    height: scale(12),
-    borderLeftWidth: scale(6),
-    borderLeftColor: theme.colors.white,
-    borderTopWidth: scale(4),
-    borderTopColor: 'transparent',
-    borderBottomWidth: scale(4),
-    borderBottomColor: 'transparent',
   },
   statsContainer: {
     position: 'absolute',
     left: (width - scale(328)) / 2, // Center horizontally
     top: scale(96) + scale(26.5) + scale(60) + scale(26.5), // Header + gap + globe + gap
     width: scale(328),
-    height: scale(72.5),
+    minHeight: scale(72.5), // Use minHeight instead of fixed height
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: scale(48),
+    alignItems: 'flex-start', // Align to top to prevent cropping
+    justifyContent: 'space-around',
+    paddingHorizontal: scale(8), // Add padding to prevent edge cropping
+    paddingTop: scale(4), // Add top padding
+    paddingBottom: scale(4), // Add bottom padding
     zIndex: 10,
   },
   statItem: {
     alignItems: 'center',
+    justifyContent: 'flex-start',
     gap: scale(6),
-    width: scale(83.273),
+    flex: 1,
+    minWidth: 0, // Allow flex to shrink if needed
+    paddingTop: scale(0), // No extra padding needed
   },
   statIconContainer: {
     width: scale(40),
     height: scale(40),
-    borderRadius: scale(20),
-    backgroundColor: theme.colors.white,
-    borderWidth: scale(1.5),
-    borderColor: theme.colors.accent.orange,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: scale(-7), // Adjust positioning
-  },
-  statIcon: {
-    width: scale(25.456),
-    height: scale(26.456),
-  },
-  downloadIconContainer: {
-    transform: [{ rotate: '180deg' }],
   },
   statLabel: {
     fontSize: scale(10),
     fontFamily: theme.typography.fonts.poppins.medium,
     color: theme.colors.white,
     fontWeight: '500',
-    lineHeight: scale(10) * 0.8744,
+    lineHeight: scale(14), // Increased line height to prevent top cropping
+    textAlign: 'center',
+    width: '100%',
+    includeFontPadding: false, // Remove extra font padding
+    textAlignVertical: 'center',
   },
   statValue: {
     fontSize: scale(16),
     fontFamily: theme.typography.fonts.poppins.semiBold,
     color: theme.colors.white,
     fontWeight: '600',
-    lineHeight: scale(16) * 0.8744,
+    lineHeight: scale(20), // Increased line height to prevent top cropping
+    textAlign: 'center',
+    width: '100%',
+    minWidth: scale(50), // Ensure minimum width for numbers
+    includeFontPadding: false, // Remove extra font padding
+    textAlignVertical: 'center',
   },
   statDivider: {
     width: scale(1.097),

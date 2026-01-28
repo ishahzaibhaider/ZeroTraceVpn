@@ -4,4 +4,6 @@ export { default as HomeScreen } from './HomeScreen';
 export { default as ServerListScreen } from './ServerListScreen';
 export { default as SettingsScreen } from './SettingsScreen';
 export { default as ConnectionTypeScreen } from './ConnectionTypeScreen';
+export { default as TermsOfUseScreen } from './TermsOfUseScreen';
+export { default as PrivacyPolicyScreen } from './PrivacyPolicyScreen';
 

@@ -10,5 +10,7 @@ export type RootStackParamList = {
   ServerList: undefined;
   Settings: undefined;
   ConnectionType: undefined;
+  TermsOfUse: undefined;
+  PrivacyPolicy: undefined;
 };
 

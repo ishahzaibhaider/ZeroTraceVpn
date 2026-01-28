@@ -1,82 +1,33 @@
 /**
  * Settings Icon (Gear)
- * SVG-based gear icon for crisp rendering
+ * Exact SVG from Figma
  */
 
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 const DESIGN_WIDTH = 390;
 const scale = (size: number) => (width / DESIGN_WIDTH) * size;
 
-export const SettingsIcon = () => {
-  const iconSize = scale(20);
-  const centerX = iconSize / 2;
-  const centerY = iconSize / 2;
-  const outerRadius = iconSize / 2 - scale(1);
-  const innerRadius = scale(5);
-  const centerRadius = scale(2.5);
-  
-  // Create gear path with 8 teeth
-  const teeth = 8;
-  const angleStep = (2 * Math.PI) / teeth;
-  const points: string[] = [];
-  
-  for (let i = 0; i < teeth; i++) {
-    const angle1 = i * angleStep;
-    const angle2 = (i + 0.5) * angleStep;
-    const angle3 = (i + 1) * angleStep;
-    
-    // Outer point (tooth tip)
-    const outerX1 = centerX + outerRadius * Math.cos(angle1);
-    const outerY1 = centerY + outerRadius * Math.sin(angle1);
-    
-    // Middle point (tooth base outer)
-    const midX = centerX + innerRadius * Math.cos(angle2);
-    const midY = centerY + innerRadius * Math.sin(angle2);
-    
-    // Outer point (next tooth tip)
-    const outerX2 = centerX + outerRadius * Math.cos(angle3);
-    const outerY2 = centerY + outerRadius * Math.sin(angle3);
-    
-    // Inner point (tooth base inner)
-    const innerX = centerX + innerRadius * Math.cos(angle2);
-    const innerY = centerY + innerRadius * Math.sin(angle2);
-    
-    if (i === 0) {
-      points.push(`M ${outerX1} ${outerY1}`);
-    }
-    points.push(`L ${midX} ${midY}`);
-    points.push(`L ${outerX2} ${outerY2}`);
-  }
-  
-  // Close the path
-  points.push('Z');
-  
-  const gearPath = points.join(' ');
-  
+export function SettingsIcon({ size }: { size?: number }) {
+  // Figma: 33x33
+  const iconSize = size ?? scale(32);
+
   return (
     <View style={[styles.container, { width: iconSize, height: iconSize }]}>
-      <Svg width={iconSize} height={iconSize} viewBox={`0 0 ${iconSize} ${iconSize}`}>
-        {/* Gear outer shape */}
+      <Svg width={iconSize} height={iconSize} viewBox="0 0 33 33" fill="none">
+        <Rect x="0.5" y="0.5" width="32" height="32" rx="16" fill="#141419" fillOpacity="0.12" />
+        <Rect x="0.5" y="0.5" width="32" height="32" rx="16" stroke="white" />
         <Path
-          d={gearPath}
-          fill="#FFFFFF"
-          stroke="none"
-        />
-        {/* Center circle */}
-        <Circle
-          cx={centerX}
-          cy={centerY}
-          r={centerRadius}
-          fill="#FFFFFF"
+          d="M24.425 18.6583L23.3833 17.5583C23.516 16.7566 23.499 15.9372 23.3333 15.1417L24.35 14.0417C24.4289 13.9537 24.4817 13.8455 24.5023 13.7292C24.5229 13.6128 24.5106 13.493 24.4667 13.3833C24.0442 12.3417 23.4213 11.3932 22.6333 10.5917C22.5562 10.5146 22.4601 10.4594 22.3547 10.4315C22.2493 10.4037 22.1384 10.4043 22.0333 10.4333L20.5 10.825C20.0278 10.4857 19.5156 10.2058 18.975 9.99167L18.6 8.55834C18.5721 8.44209 18.5107 8.33661 18.4232 8.2551C18.3358 8.17359 18.2262 8.11964 18.1083 8.10001C17.589 8.00297 17.0616 7.95553 16.5333 7.95834C15.8723 7.96147 15.2143 8.04827 14.575 8.21667C14.4683 8.24349 14.3709 8.29872 14.2931 8.37649C14.2154 8.45427 14.1601 8.55167 14.1333 8.65834L13.7333 10.1333C13.2861 10.3317 12.8614 10.5776 12.4667 10.8667L10.95 10.4917C10.8435 10.4638 10.7315 10.4654 10.6258 10.4962C10.5201 10.527 10.4248 10.586 10.35 10.6667C9.52147 11.5274 8.8877 12.5562 8.49166 13.6833C8.45325 13.7923 8.44537 13.9097 8.46887 14.0228C8.49238 14.1359 8.54636 14.2404 8.62499 14.325L9.67499 15.4167C9.62166 15.7672 9.59388 16.12 9.59166 16.475C9.59166 16.725 9.59166 16.975 9.63333 17.225L8.54166 18.4417C8.46819 18.5226 8.41722 18.6213 8.39383 18.728C8.37043 18.8348 8.37543 18.9458 8.40833 19.05C8.75078 20.1519 9.31831 21.1706 10.075 22.0417C10.1511 22.1312 10.2509 22.1974 10.3629 22.2328C10.4749 22.2681 10.5946 22.2712 10.7083 22.2417L12.1417 21.875C12.6438 22.2968 13.2054 22.6422 13.8083 22.9L14.225 24.3917C14.2571 24.4998 14.3171 24.5976 14.3991 24.6751C14.481 24.7527 14.5819 24.8072 14.6917 24.8333C15.2925 24.9692 15.9075 25.0392 16.525 25.0417C17.0172 25.0361 17.5061 24.9889 17.9917 24.9C18.1067 24.8797 18.2137 24.8275 18.3006 24.7495C18.3876 24.6714 18.4508 24.5705 18.4833 24.4583L18.875 23.05C19.5945 22.7927 20.2652 22.4151 20.8583 21.9333L22.325 22.2667C22.435 22.2922 22.5499 22.2871 22.6572 22.2518C22.7644 22.2166 22.86 22.1525 22.9333 22.0667C23.6641 21.2558 24.2302 20.3104 24.6 19.2833C24.6299 19.1731 24.6294 19.0567 24.5986 18.9467C24.5678 18.8367 24.5078 18.737 24.425 18.6583ZM16.6 19.7167C16.1789 19.7246 15.7604 19.6486 15.3689 19.4931C14.9774 19.3377 14.6208 19.1059 14.3197 18.8113C14.0187 18.5166 13.7793 18.1651 13.6155 17.777C13.4517 17.389 13.3667 16.9722 13.3656 16.551C13.3644 16.1298 13.4471 15.7125 13.6087 15.3236C13.7704 14.9346 14.0079 14.5817 14.3073 14.2855C14.6066 13.9892 14.962 13.7554 15.3526 13.5978C15.7432 13.4402 16.1613 13.3619 16.5825 13.3675C17.4246 13.3653 18.233 13.6977 18.83 14.2915C19.427 14.8854 19.7636 15.6921 19.7658 16.5342C19.768 17.3762 19.4356 18.1847 18.8418 18.7817C18.2479 19.3787 17.4412 19.7153 16.5992 19.7175"
+          fill="white"
         />
       </Svg>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

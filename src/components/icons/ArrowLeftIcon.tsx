@@ -1,6 +1,6 @@
 /**
- * Arrow Right Icon (White Chevron)
- * Matching Figma design - white chevron for Smart Connect card
+ * Arrow Left Icon (Back Arrow)
+ * Matching Figma design - left-pointing chevron for navigation
  */
 
 import React from 'react';
@@ -11,8 +11,8 @@ const { width } = Dimensions.get('window');
 const DESIGN_WIDTH = 390;
 const scale = (size: number) => (width / DESIGN_WIDTH) * size;
 
-export function ArrowRightIcon({ size, color }: { size?: number; color?: string }) {
-  const iconSize = size ?? scale(20);
+export function ArrowLeftIcon({ size, color }: { size?: number; color?: string }) {
+  const iconSize = size ?? scale(24);
   const chevronWidth = scale(6);
   const chevronHeight = scale(10);
   const iconColor = color ?? '#141419';
@@ -20,9 +20,9 @@ export function ArrowRightIcon({ size, color }: { size?: number; color?: string 
   return (
     <View style={[styles.container, { width: iconSize, height: iconSize }]}>
       <Svg width={iconSize} height={iconSize} viewBox={`0 0 ${iconSize} ${iconSize}`}>
-        {/* Right-pointing chevron */}
+        {/* Left-pointing chevron */}
         <Path
-          d={`M ${iconSize / 2 - chevronWidth / 2} ${iconSize / 2 - chevronHeight / 2} L ${iconSize / 2 + chevronWidth / 2} ${iconSize / 2} L ${iconSize / 2 - chevronWidth / 2} ${iconSize / 2 + chevronHeight / 2}`}
+          d={`M ${iconSize / 2 + chevronWidth / 2} ${iconSize / 2 - chevronHeight / 2} L ${iconSize / 2 - chevronWidth / 2} ${iconSize / 2} L ${iconSize / 2 + chevronWidth / 2} ${iconSize / 2 + chevronHeight / 2}`}
           fill="none"
           stroke={iconColor}
           strokeWidth={scale(2)}
@@ -40,4 +40,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-
